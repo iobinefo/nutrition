@@ -53,6 +53,7 @@ replace sex = . if sex != 1 & sex != 2
 *--------------------------------------------------------------*
 egen height_cm = rowmean(s4aq53_1 s4aq53_2  s4aq53_3)
 
+tab s4aq53_1
 * Drop biologically impossible heights for 0–59 months
 *replace height_cm = . if height_cm < 45 | height_cm > 120
 
@@ -118,7 +119,7 @@ save  "${Nigeria_GHS_W4_created_data}/haz.dta", replace
 
 
 ********************************************************************************
-* AG FILTER *
+* SHOCK *
 ********************************************************************************
 
 use "${Nigeria_GHS_W4_raw_data}\sect15a_harvestw4.dta", clear
@@ -2962,6 +2963,21 @@ la var fdothpr "Food items not mentioned above auto-consumption"
 *merge 1:1 hhid using `hhexp', nogen
 drop *_def
 
+
+
+
+
+
+
+
+
+
+
+
+**************************************************************************************************************************************************
+*Come here for the definition of Protein Consumption
+**************************************************************************************************************************************************
+**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
 egen cereals_only = rowtotal (fdsorby fdmilby fdmaizby fdriceby fdyamby fdcasby fdcereby fdbrdby fdsorpr fdmilpr fdmaizpr fdricepr fdyampr fdcaspr fdcerepr fdbrdpr)
 egen protein_only = rowtotal (fdpoulby fdmeatby fdfishby fddairby fdfatsby fdbeanby fdspiceby fdpoulpr fdmeatpr fdfishpr fddairpr fdfatspr fdbeanpr fdspiceby)
 egen fruits_vegetables = rowtotal (fdtubby fdfrutby fdvegby fdtubpr fdfrutpr fdvegpr)
@@ -3294,6 +3310,14 @@ la var fdothpr "Food items not mentioned above auto-consumption"
 
 *merge 1:1 hhid using `hhexp', nogen
 drop *_def
+
+
+
+**************************************************************************************************************************************************
+*Come here for the definition of Protein Consumption
+**************************************************************************************************************************************************
+**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+
 
 egen cereals_only = rowtotal (fdsorby fdmilby fdmaizby fdriceby fdyamby fdcasby fdcereby fdbrdby fdsorpr fdmilpr fdmaizpr fdricepr fdyampr fdcaspr fdcerepr fdbrdpr)
 egen protein_only = rowtotal (fdpoulby fdmeatby fdfishby fddairby fdfatsby fdbeanby fdspiceby fdpoulpr fdmeatpr fdfishpr fddairpr fdfatspr fdbeanpr fdspiceby)
@@ -3853,10 +3877,14 @@ egen mean2 = mean (dev_rain_2017_Aug)
 ren dev_rain_2017_Mar dev_rain_Mar
 ren  dev_rain_2017_Aug dev_rain_Aug
 
-misstable summarize ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty n_kg  tpricefert_cens_mrk real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue totcons_pc peraeq_cons total_cons number_foodgroup mrk_dist_w num_mem hh_headage femhead attend_sch worker peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall child  dev_rain_Mar dev_rain_Aug haz peraeq_cons_protein
+misstable summarize haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty n_kg  tpricefert_cens_mrk real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue totcons_pc peraeq_cons total_cons number_foodgroup mrk_dist_w num_mem hh_headage femhead attend_sch worker peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall child  dev_rain_Mar dev_rain_Aug haz peraeq_cons_protein
 
 egen med = median(haz)
 replace haz = med if haz ==.
+
+tabstat haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty n_kg  tpricefert_cens_mrk real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue totcons_pc peraeq_cons total_cons number_foodgroup mrk_dist_w num_mem hh_headage femhead attend_sch worker peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall child  dev_rain_Mar dev_rain_Aug haz peraeq_cons_protein [w=weight], statistics( mean median sd min max ) columns(statistics)
+
+keep if ag_rainy_18 ==1
 save "${Nigeria_GHS_W4_created_data}/final_19.dta", replace
 
 

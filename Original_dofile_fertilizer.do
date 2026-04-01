@@ -3850,6 +3850,8 @@ ren dev_rain_2022_Aug dev_rain_Aug
 
 egen med = median(haz)
 replace haz = med if haz ==.
+
+keep if ag_rainy_23 ==1 
 save "${Nigeria_GHS_W5_created_data}/final_23.dta", replace
 
 
@@ -3868,6 +3870,8 @@ save "${Nigeria_GHS_W5_created_data}/final_23.dta", replace
 
 
 
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_12.dta" 
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_15.dta"
 
 
 append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_four\final_19.dta"
@@ -3885,7 +3889,7 @@ gen dummy = 1
 
 collapse (sum) dummy, by (hhid)
 tab dummy
-keep if dummy==2
+keep if dummy==4
 
 
 merge 1:m hhid  using "${Nigeria_GHS_W5_created_data}/apppend.dta", gen(fil)
@@ -4849,3 +4853,218 @@ eststo model1
 
 estat firststage
 
+
+
+
+
+
+
+
+
+
+
+
+************************************************************
+* ROBUSTNESS IV: 2022 fertilizer price spike exposure design 03/26/2026
+************************************************************
+
+* 1. Construct pre-2022 fertilizer intensity
+gen fert_intensity = fert_qty/field_size if field_size>0 & field_size<.
+
+preserve
+keep if inlist(year, 2012, 2015, 2019)
+bysort hhid: egen exposure_fert_pre = mean(fert_intensity)
+keep hhid exposure_fert_pre
+bysort hhid: keep if _n==1
+tempfile exposurefert
+save `exposurefert'
+restore
+
+merge m:1 hhid using `exposurefert', nogen
+
+* 2. Create post-shock IV
+gen post2023 = (year==2023)
+gen z_fertshock = post2023*exposure_fert_pre
+
+* 3. Endogenous interaction and interaction IV
+gen inc_shock = value_harvest*shock
+gen z_fertshock_shock = z_fertshock*shock
+
+* 4. IV regression: protein expenditure
+ivreghdfe peraeq_cons_protein ///
+    (value_harvest inc_shock = z_fertshock z_fertshock_shock) ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+
+estat firststage
+lincom value_harvest
+lincom value_harvest + inc_shock
+
+* 5. IV regression: HAZ
+ivreghdfe haz ///
+    (value_harvest inc_shock = z_fertshock z_fertshock_shock) ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+
+estat firststage
+lincom value_harvest
+lincom value_harvest + inc_shock
+
+* 6. Placebo pre-trend checks
+gen y2015 = (year==2015)
+gen y2019 = (year==2019)
+gen placebo2015 = y2015*exposure_fert_pre
+gen placebo2019 = y2019*exposure_fert_pre
+
+reghdfe value_harvest placebo2015 placebo2019 ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+
+	
+	
+	
+	
+************************************************************
+* ROBUSTNESS IV: 2022 community fertilizer price spike exposure design 03/26/2026
+************************************************************
+	
+	
+gen fert_intensity = fert_qty/field_size if field_size>0 & field_size<.
+
+preserve
+keep if inlist(year,2012,2015,2019)
+collapse (mean) comm_fert_pre=fert_intensity, by(clusterid year)
+collapse (mean) exposure_comm_pre=comm_fert_pre, by(clusterid)
+tempfile commexp
+save `commexp'
+restore
+
+merge m:1 clusterid using `commexp', nogen
+
+gen post2023 = (year==2023)
+gen z_commshock = post2023*exposure_comm_pre
+gen inc_shock = value_harvest*shock
+gen z_commshock_shock = z_commshock*shock
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+************************************************************
+* STEP 6: Placebo pre-trend interactions
+************************************************************
+
+gen y2015 = (year==2015)
+gen y2019 = (year==2019)
+
+gen placebo2015 = y2015*exposure_fert_pre
+gen placebo2019 = y2019*exposure_fert_pre
+
+
+reghdfe value_harvest placebo2015 placebo2019 ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+	
+	
+	
+
+/*
+gen value_maize = qty_maize * price_maize if qty_maize<. & price_maize<.
+gen value_rice  = qty_rice  * price_rice  if qty_rice<.  & price_rice<.
+gen value_veg   = qty_veg   * price_veg   if qty_veg<.   & price_veg<.
+
+gen value_marketcrop = value_maize + value_rice + value_veg
+gen marketcrop_share = value_marketcrop/value_harvest if value_harvest>0 & value_harvest<.
+gen value_harvest = value_maize + value_rice + value_veg + value_cassava + value_yam
+
+
+gen value_marketcrop = sales_maize + sales_rice + sales_veg
+gen marketcrop_share = value_marketcrop/value_harvest if value_harvest>0 & value_harvest<.
+
+
+
+gen value_marketcrop_sales = sales_maize + sales_rice + sales_veg
+gen marketcrop_sales_share = value_marketcrop_sales/value_harvest if value_harvest>0 & value_harvest<.
+
+
+
+
+
+*/
+	
+	
+
+
+************************************************************
+* EXAMPLE: MARKET-CROP SHARE IV
+************************************************************
+
+* Example market crops: maize, rice, vegetables
+* Replace these with your real variable names
+
+gen value_maize = qty_maize*price_maize if qty_maize<. & price_maize<.
+gen value_rice  = qty_rice*price_rice   if qty_rice<.  & price_rice<.
+gen value_veg   = qty_veg*price_veg     if qty_veg<.   & price_veg<.
+
+gen value_marketcrop = value_maize + value_rice + value_veg
+
+* if value_harvest does not already exist, create total harvest value
+* gen value_harvest = value_maize + value_rice + value_veg + value_cassava + value_yam
+
+gen marketcrop_share = value_marketcrop/value_harvest if value_harvest>0 & value_harvest<.
+
+* Pre-2022 exposure
+preserve
+keep if inlist(year, 2012, 2015, 2019)
+bysort hhid: egen exposure_mkt_pre = mean(marketcrop_share)
+keep hhid exposure_mkt_pre
+bysort hhid: keep if _n==1
+tempfile exposuremkt
+save `exposuremkt'
+restore
+
+merge m:1 hhid using `exposuremkt', nogen
+
+* Post-shock IV
+gen post2023 = (year==2023)
+gen z_mktshock = post2023*exposure_mkt_pre
+
+* Endogenous interaction and interaction IV
+gen inc_shock = value_harvest*shock
+gen z_mktshock_shock = z_mktshock*shock
+
+* IV regression: protein expenditure
+ivreghdfe peraeq_cons_protein ///
+    (value_harvest inc_shock = z_mktshock z_mktshock_shock) ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+
+estat firststage
+lincom value_harvest
+lincom value_harvest + inc_shock
+
+* IV regression: HAZ
+ivreghdfe haz ///
+    (value_harvest inc_shock = z_mktshock z_mktshock_shock) ///
+    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
+    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    absorb(hhid year) cluster(hhid)
+
+estat firststage
+lincom value_harvest
+lincom value_harvest + inc_shock

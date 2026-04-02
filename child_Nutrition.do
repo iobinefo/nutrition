@@ -13,7 +13,18 @@ append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\
 
 append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_12.dta" 
 append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_15.dta"
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_one\final_10.dta"
 
+
+
+
+preserve
+keep if year ==2010
+misstable summarize haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue    hh_members  soil_qty_rev2 mrk_dist_w num_mem hh_headage femhead attend_sch worker zone state lga ea peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg 
+
+
+count
+restore
 
 
 
@@ -68,7 +79,7 @@ gen dummy = 1
 
 collapse (sum) dummy, by (hhid)
 tab dummy
-keep if dummy==4
+keep if dummy==5
 sort hhid
 
 merge 1:m hhid  using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend.dta", gen(fil)
@@ -81,6 +92,15 @@ sort hhid  year
 
 misstable summarize haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue    hh_members  soil_qty_rev2 mrk_dist_w num_mem hh_headage femhead attend_sch worker zone state lga ea peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg 
 
+
+
+preserve
+keep if year ==2010
+misstable summarize haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk  hhasset_value_w real_hhvalue    hh_members  soil_qty_rev2 mrk_dist_w num_mem hh_headage femhead attend_sch worker zone state lga ea peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg 
+
+
+count
+restore
 
 
 
@@ -257,11 +277,24 @@ gen lperaeq_cons = log(peraeq_cons)
 
 gen lproductivity_w = log(productivity_w + 1)
 
+
+egen field = median(field_size)
+egen harvest = median(value_harvest)
+
+replace field_size = field if field_size ==. 
+
+replace value_harvest = harvest if value_harvest ==. 
+
+replace shock =0 if shock ==.
+
+
+
+
 save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_nutrition2.dta", replace ///everything
 
 
 
-local time_avg "mrk_dist_w  real_maize_price_mr good fair  total_qty real_hhvalue field_size num_mem hh_headage femhead attend_sch worker real_tpricefert_cens_mrk value_harvest annual_salary_agwage annual_salary mean_annual_rainfall shock shock1"
+local time_avg "mrk_dist_w  real_maize_price_mr good fair  total_qty real_hhvalue field_size num_mem hh_headage femhead attend_sch worker real_tpricefert_cens_mrk value_harvest annual_salary_agwage annual_salary mean_annual_rainfall shock shock1 hh_members"
 
 foreach x in `time_avg' {
 
@@ -280,8 +313,17 @@ count
 
 
 preserve
+keep if year ==2010
+tabstat haz shockk hh_members shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
+
+misstable summarize haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug 
+
+count
+restore
+
+preserve
 keep if year ==2012
-tabstat haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
+tabstat haz shock hh_members shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug 
 
@@ -291,7 +333,7 @@ restore
 */
 preserve
 keep if year ==2015
-tabstat haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
+tabstat haz shock hh_members shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug 
 count
@@ -301,7 +343,7 @@ restore
 
 preserve
 keep if year ==2018
-tabstat haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
+tabstat haz shock shock1 hh_members peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug 
 count
@@ -310,7 +352,7 @@ restore
 
 preserve
 keep if year ==2023
-tabstat haz shock shock1  peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug [w=weight], statistics( mean median sd min max ) columns(statistics)
+tabstat haz shock shock1  hh_members peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug [w=weight], statistics( mean median sd min max ) columns(statistics)
 
 misstable summarize haz shock shock1 peraeq_cons_protein annual_salary_agwage annual_salary value_harvest field_size num_mem mean_annual_rainfall rainfall_shortfall shortfall_Mar shortfall_Aug  dev_rain_Mar dev_rain_Aug 
 count
@@ -327,8 +369,8 @@ gen rain_shock = shortfall_Mar*shock
 
 ivregress 2sls peraeq_cons_protein ///
     (value_harvest inc_shock = shortfall_Mar rain_shock) ///
-    shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    shock mrk_dist_w real_maize_price_mr good fair  real_hhvalue ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 
 estat firststage
@@ -341,12 +383,53 @@ lincom value_harvest + inc_shock
 ivreghdfe peraeq_cons_protein ///
     (value_harvest inc_shock = shortfall_Mar rain_shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
     , absorb(hhid year) cluster(hhid)
 
 lincom value_harvest
 lincom value_harvest + inc_shock
 
+
+preserve
+keep if year ==2010
+
+misstable summarize haz peraeq_cons_protein shock shortfall_Mar rain_shock shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall 
+
+count
+restore
+
+preserve
+keep if year ==2012
+
+misstable summarize haz shock peraeq_cons_protein shortfall_Mar rain_shock shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall 
+
+count
+restore
+
+*/
+preserve
+keep if year ==2015
+
+misstable summarize haz shock peraeq_cons_protein shortfall_Mar rain_shock shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall 
+count
+restore
+
+
+
+preserve
+keep if year ==2018
+
+misstable summarize haz shock peraeq_cons_protein shortfall_Mar rain_shock shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall 
+count
+restore
+
+
+preserve
+keep if year ==2023
+
+misstable summarize haz shock  peraeq_cons_protein shortfall_Mar rain_shock shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall 
+count
+restore
 
 
 
@@ -363,7 +446,7 @@ ivregress 2sls haz ///
      c.dev_rain_Mar  c.dev_rain_Aug ///
      c.dev_rain_Mar#c.shock c.dev_rain_Aug#c.shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 
 estat firststage
@@ -381,7 +464,7 @@ ivreghdfe haz ///
      c.dev_rain_Mar  c.dev_rain_Aug ///
      c.dev_rain_Mar#c.shock c.dev_rain_Aug#c.shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall, ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall, ///
     absorb(hhid year) cluster(hhid)
 
 lincom value_harvest
@@ -412,9 +495,9 @@ eststo clear
 ivregress 2sls lperaeq_cons_protein ///
     (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
 	TAvg_mrk_dist_w TAvg_real_maize_price_mr TAvg_good TAvg_fair TAvg_total_qty TAvg_real_hhvalue ///
-    TAvg_field_size TAvg_num_mem TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
+    TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
@@ -428,9 +511,9 @@ eststo clear
 ivreghdfe lperaeq_cons_protein ///
     (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
 	TAvg_mrk_dist_w TAvg_real_maize_price_mr TAvg_good TAvg_fair TAvg_total_qty TAvg_real_hhvalue ///
-    TAvg_field_size TAvg_num_mem TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
+    TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
     , absorb(hhid year) cluster(hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
@@ -463,9 +546,9 @@ eststo clear
 ivregress 2sls haz ///
     (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
 	TAvg_mrk_dist_w TAvg_real_maize_price_mr TAvg_good TAvg_fair TAvg_total_qty TAvg_real_hhvalue ///
-    TAvg_field_size TAvg_num_mem TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
+    TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\haz.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
@@ -479,9 +562,9 @@ lincom value_harvest + inc_shock
 ivreghdfe haz ///
     (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr good fair total_qty real_hhvalue ///
-    field_size num_mem hh_headage femhead attend_sch worker mean_annual_rainfall ///
+    field_size hh_members hh_headage femhead attend_sch worker mean_annual_rainfall ///
 	TAvg_mrk_dist_w TAvg_real_maize_price_mr TAvg_good TAvg_fair TAvg_total_qty TAvg_real_hhvalue ///
-    TAvg_field_size TAvg_num_mem TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
+    TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch TAvg_worker TAvg_mean_annual_rainfall ///
     , absorb(hhid year) cluster(hhid)
 
 lincom value_harvest

@@ -36,9 +36,9 @@ save  "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", replace
 ********************************************************************************
 
 use "${Nigeria_GHS_W1_raw_data}/Post Planting Wave 1\Household\secta_plantingw1.dta" , clear
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 gen rural = (sector==2)
 lab var rural "1= Rural"
 keep hhid zone state lga ea wt_wave1 rural
@@ -57,9 +57,9 @@ collapse (max) srtmslp_nga srtm_nga twi_nga, by (hhid)
 
 merge 1:m hhid using "${Nigeria_GHS_W1_raw_data}\Geodata\NGA_HouseholdGeovariables_Y1.dta"
 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 ren srtmslp_nga plot_slope
 ren srtm_nga  plot_elevation
@@ -94,9 +94,9 @@ sort hhid
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 ************winzonrizing total_qty
 foreach v of varlist  dist_market  {
@@ -140,14 +140,19 @@ merge 1:1 hhid indiv using "${Nigeria_GHS_W1_raw_data}\sect1_harvestw1.dta", nog
 *--------------------------------------------------------------*
 * 0. Keep children aged 0–59 months
 *--------------------------------------------------------------*
+gen child = 0
+replace child = 1 if s4aq51 == 1
+replace child = 0 if child ==.
+tab child, missing
 keep if s4aq51 == 1
+
 
 *--------------------------------------------------------------*
 * 1. Age in months
 *    Replace s1q4 with the correct age-in-years variable if needed
 *--------------------------------------------------------------*
 gen age_months = s1q4 * 12
-replace age_months = . if age_months < 0 | age_months > 59
+replace age_months = 59 if age_months < 0 | age_months > 59
 
 *--------------------------------------------------------------*
 * 2. Sex (WHO coding: 1 = boy, 2 = girl)
@@ -188,9 +193,12 @@ zscore06, a(age_months) s(sex) h(height_cm) ///
 * 7. Clean HAZ output
 *--------------------------------------------------------------*
 gen haz = haz06
+
+tab haz, missing
+sum haz, detail
 replace haz = . if haz > 1000
 replace haz = . if haz < -6 | haz > 6
-
+sum haz, detail
 *--------------------------------------------------------------*
 * 8. Optional stunting indicators
 *--------------------------------------------------------------*
@@ -211,12 +219,17 @@ tab stunted if haz < ., missing
 sum haz, detail
 tab stunted if haz < ., missing
 
-collapse (mean) haz (max) s4aq51, by(hhid)
+collapse (mean) haz (sum) child1 = child (max) child s4aq51, by(hhid)
+
+egen med = median(haz)
 
 gen haz2 = haz
-replace haz2 = 3.06 if haz > 3.06 
+replace haz2 = med if haz ==.
 sum haz, detail
 sum haz2, detail
+tab haz, missing
+tab haz2, missing
+tab child1, missing
 save  "${Nigeria_GHS_W1_created_data}/haz.dta", replace
 
 
@@ -229,16 +242,24 @@ save  "${Nigeria_GHS_W1_created_data}/haz.dta", replace
 
 use "${Nigeria_GHS_W1_raw_data}\sect15a_harvestw1.dta", clear
 
-*gen shock = 1 if s15aq1==1 & shock_cd ==12 | shock_cd ==13 | shock_cd ==14
-gen ag = 1 if shock_cd ==12 | shock_cd ==13 | shock_cd ==14
-gen shock1 if ag = 1 & s15aq1==1
-replace shock1 = 0 if shock1==.
+gen nonag_shock = 1 if s15aq1==1 & shock_cd ==2 | shock_cd ==3 | shock_cd ==4 | shock_cd ==5 | shock_cd ==6 | shock_cd ==7 | shock_cd ==8 | shock_cd ==11 | shock_cd ==15
+
+replace nonag_shock = 0 if nonag_shock==.
+
+gen ag_shock = 1 if shock_cd ==9 | shock_cd ==12 | shock_cd ==13 | shock_cd ==14 | shock_cd ==16 | shock_cd ==17 | shock_cd ==18 | shock_cd ==19 | shock_cd ==20 & s15aq1==1
+
+replace ag_shock = 0 if ag_shock==.
+
+tab ag_shock, missing 
+tab nonag_shock, missing
 
 gen shock =1 if (s15aq1==1)
 replace shock = 0 if shock==.
-collapse (max) shock shock1, by (hhid)
-tab shock
-tab shock1
+collapse (max) shock ag_shock nonag_shock, by (hhid)
+tab shock, missing
+tab ag_shock, missing
+tab nonag_shock, missing
+count
 save  "${Nigeria_GHS_W1_created_data}/shock.dta", replace
 
 
@@ -456,6 +477,7 @@ ren cereals_only totcons_cereal_ph
 ren protein_only totcons_protein_ph 
 ren fruits_vegetables totcons_veg_ph
 
+*br hhid totcons_cereal_pp totcons_cereal_ph totcons_protein_pp totcons_protein_ph totcons_veg_pp totcons_veg_ph
 *gen totcons_cereal = (totcons_cereal_pp+totcons_cereal_ph)/2
 gen totcons_cereal = totcons_cereal_pp
 *gen totcons_protein = (totcons_protein_pp+totcons_protein_ph)/2
@@ -464,6 +486,10 @@ gen totcons_protein = totcons_protein_pp
 gen totcons_fruit_veg = totcons_veg_pp
 
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_hh_adulteq.dta", nogen keep(1 3) keepusing(adulteq)
+
+
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", nogen
+
 
 
 
@@ -481,18 +507,39 @@ gen totalcons_veg = totcons_fruit_veg*365
 
 
 
+foreach v of varlist  peraeq_cons_protein  {
+	_pctile `v' [aw=weight] , p(1 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+foreach v of varlist  totalcons_protein  {
+	_pctile `v' [aw=weight] , p(1 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+ren peraeq_cons_protein you 
+ren totalcons_protein me
+
 ren totcons_cereal totcons_cereal_n
 ren totcons_protein totcons_protein_n
 ren totcons_fruit_veg totcons_fruit_veg_n
 
 
 ren peraeq_cons_cereal peraeq_cons_cereal_n
-ren peraeq_cons_protein peraeq_cons_protein_n
+ren peraeq_cons_protein_w peraeq_cons_protein_n
 ren peraeq_cons_veg peraeq_cons_veg_n
 
 
 ren totalcons_cereal totalcons_cereal_n
-ren totalcons_protein totalcons_protein_n
+ren totalcons_protein_w totalcons_protein_n
 ren totalcons_veg totalcons_veg_n
 
 
@@ -511,6 +558,7 @@ gen totalcons_veg = totalcons_veg_n /0.190511
     
 		
 keep hhid adulteq totcons_cereal totcons_protein  totcons_fruit_veg peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg
+misstable summarize adulteq totcons_cereal totcons_protein  totcons_fruit_veg peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg
 save "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_consumption_group2.dta", replace
 
 
@@ -521,6 +569,7 @@ use "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_consumption_group2.dta", clea
 merge 1:1 hhid using   "${Nigeria_GHS_W1_created_data}/haz.dta", nogen
 
 keep if s4aq51 ==1
+misstable summarize adulteq totcons_cereal totcons_protein  totcons_fruit_veg peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg
 save "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_consumption_group2.dta", replace 
 
 
@@ -685,14 +734,7 @@ save "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_plot_decision_makers", repla
 ********************************************************************************
 use "${Nigeria_GHS_W1_raw_data}/w1agnsconversion", clear
 ren agcropid crop_code
-/*gen size = 1 if inlist(nscode, 11,21,31...etc)
-replace size=2 if inlist(nscode,12,22,..etc)
-la def sizecd 1 "small" 2 "medium" 3 "large"
-la val size sizecd
-gen unit=10 if nscode <=14*/
-*gen stringnscode = string(nscode)
-*Need to parse this out so that the KGs are in another column... numerical to string?
-*drop if kg==0
+
 ren nscode unit
 ren conversion  conv_fact
 save "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_ng3_cf.dta", replace
@@ -770,16 +812,7 @@ append using "${Nigeria_GHS_W1_raw_data}/sect11g_plantingW1.dta"
 	replace field_crop = 0 if field_crop==.
 	drop if field_crop == 0 & (s11gq1a == . & s11gq2==. & s11gq8a==.)
 
-//ALT 03.23.23: This should be a straightforward append since one module is for field crops and the other for tree crops, but some harvest information for field crops is present in section g and some planting information for tree crops is present in section f. A collapse firstnm should resolve but won't reveal if there are clashes. 
-//Verifying that we aren't losing any information
-/*
-	preserve 
-	ds, has(type string)
-	drop `r(varlist)'
-	collapse (count) s11fq1a-s11gq8b, by(zone state lga sector ea hhid plotid cropid cropcode)
-	sum s11* //max one obs per row
-	restore
-*/
+
 	collapse (firstnm) s11fq1a-s11gq8c, by(zone state lga sector ea hhid plotid cropid cropcode)
 	duplicates report hhid plotid cropid //superfluous obs are trimmed. Only problem is now field crop might be inaccurate
 	drop field_crop
@@ -989,9 +1022,9 @@ restore
 *Subsidized Fertilizer
 ****************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11d_plantingw1.dta",clear 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 *graph bar (count), over(s11dq13)
 
 *s11dq13 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -1037,9 +1070,9 @@ collapse (sum)subsidy_qty (max) subsidy_dummy, by (hhid)
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 ************winzonrizing subsidy_qty
 foreach v of varlist  subsidy_qty  {
@@ -1074,9 +1107,9 @@ save "${Nigeria_GHS_W1_created_data}\subsidized_fert.dta", replace
 *******************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11d_plantingw1.dta",clear 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 *graph bar (count), over(s11dq13)
 
 *s11dq13 1st 		source of inorg purchased fertilizer (1=govt, 2=private)
@@ -1206,9 +1239,9 @@ tab tpricefert_cens_mrk, missing
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 ************winzonrizing total_qty
 foreach v of varlist  total_qty  {
@@ -1262,9 +1295,9 @@ save "${Nigeria_GHS_W1_created_data}\purchasefert.dta", replace
 *************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect4_plantingw1.dta",clear 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 *s4q1  1= formal bank account
 *s4q5b  s4q5d   s4q5f  types of formal fin institute used to save 
@@ -1299,9 +1332,9 @@ save "${Nigeria_GHS_W1_created_data}\savings.dta", replace
 ***************************
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect4_plantingw1.dta",clear 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 *s4q8b  s4q8d   s4q8f   types of formal fin institute used to borrow 
 *s4q9      1= used inoformal group to borrow money
 
@@ -1384,9 +1417,9 @@ tempfile advie_ph
 save `advie_ph'
 restore
 append using `advie_ph'
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 replace ext_acess =0 if ext_acess ==.
  
@@ -1404,9 +1437,9 @@ merge 1:1 hhid indiv using "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Hous
 
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\market_distance.dta", keepusing (median_lga median_state median_zone mrk_dist)
 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 **************
 *market distance
 *************
@@ -1541,9 +1574,9 @@ collapse (sum) num_mem (max) mrk_dist hh_headage femhead attend_sch pry_edu fini
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 
 tab mrk_dist
@@ -1599,9 +1632,9 @@ save "${Nigeria_GHS_W1_created_data}\demographics.dta", replace
 *Labor Age 
 *********************************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect1_plantingw1.dta", clear
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 ren s1q4 hh_age
 
 gen worker = 1
@@ -1621,9 +1654,9 @@ save "${Nigeria_GHS_W1_created_data}\labor_age.dta", replace
 *Safety Net
 *****************************
 use "${Nigeria_GHS_W1_raw_data}\Post Harvest Wave 1\Household\sect14_harvestw1.dta", clear
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 gen safety_net = 0
 replace safety_net =1 if s14q1 ==1
 tab safety_net
@@ -1793,9 +1826,9 @@ save "${Nigeria_GHS_W1_created_data}\food_prices.dta", replace
 ***************
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect7b_plantingw1.dta", clear
 merge m:1 zone state lga sector ea using "${Nigeria_GHS_W1_created_data}\food_prices.dta", keepusing (median_pr_ea median_pr_lga median_pr_state median_pr_zone maize_price_mr rice_price_mr)
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 **************
 *maize price
@@ -1937,9 +1970,9 @@ la var cpi "CPI (base=2023)"
 
 
 use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Household\sect5_plantingw1.dta", clear
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 sort hhid item_cd
 
 collapse (sum) s5q1, by (zone state lga ea hhid item_cd)
@@ -1958,9 +1991,9 @@ merge 1:1 hhid item_cd using "${Nigeria_GHS_W1_created_data}\assest_qty.dta", ke
 
 drop _merge
 
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 gen hhasset_value = s5q4*s5q1
 
 
@@ -1981,9 +2014,9 @@ sum hhasset_value, detail
 collapse (sum) hhasset_value, by (hhid)
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 
 foreach v of varlist  hhasset_value  {
@@ -2092,9 +2125,9 @@ use "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11a1_planti
 merge 1:1 hhid plotid using  "${Nigeria_GHS_W1_raw_data}\Post Planting Wave 1\Agriculture\sect11b_plantingw1.dta"
 *merging in harvest section to get areas for new plots
 merge 1:1 hhid plotid using "${Nigeria_GHS_W1_raw_data}\Post Harvest Wave 1\Agriculture\secta1_harvestw1.dta", gen(plot_merge)
-merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge m:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
  
 ren s11aq4a area_size
 ren s11aq4b area_unit
@@ -2147,9 +2180,9 @@ collapse (sum) field_size, by (hhid)
 
 
 merge 1:1 hhid using  "${Nigeria_GHS_W1_created_data}/weight.dta", gen (wgt)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 
-keep if ag_rainy_10==1
+*keep if ag_rainy_10==1
 
 
 foreach v of varlist  field_size  {
@@ -2554,25 +2587,38 @@ count
 order hhid plot_id  quant_harv_kg value_harvest ha_harvest percent_inputs field_size purestand
 
 collapse (sum) quant_harv_kg value_harvest ha_planted field_size (max) percent_inputs  purestand, by (hhid)
-
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", nogen
 
 sum ha_planted, detail
 
 replace ha_planted = 9.5 if ha_planted >= 9.5 
 replace field_size = 20 if field_size >= 20
 ren value_harvest real_value_harvest
-gen value_harvest  = real_value_harvest/0.236945
+
+tab real_value_harvest, missing
+sum real_value_harvest, detail
+
+foreach v of varlist  real_value_harvest  {
+	_pctile `v' [aw=weight] , p(1 95) 
+	gen `v'_w=`v'
+	replace  `v'_w = r(r1) if  `v'_w < r(r1) &  `v'_w!=.
+	replace  `v'_w = r(r2) if  `v'_w > r(r2) &  `v'_w!=.
+	local l`v' : var lab `v'
+	lab var  `v'_w  "`l`v'' - Winzorized top & bottom 5%"
+}
+
+
+
+sum real_value_harvest real_value_harvest_w, detail
+gen value_harvest  = real_value_harvest_w/0.236945
 sum value_harvest, detail
-tab value_harvest
-replace value_harvest=  4695385 if value_harvest>= 4695385
 
-
-
-
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/haz.dta", nogen
+merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/shock.dta", nogen
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/purchasefert.dta", gen(fert)
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/net_buyer_seller.dta", gen (food)
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/assest_value.dta", gen (asset)
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", nogen
+*merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/weight.dta", nogen
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/ag_rainy_10.dta", gen(filter)
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/extension_visit.dta", gen(diet)
 *merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W2_consumption2.dta", gen(exp)
@@ -2587,29 +2633,32 @@ merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_wage_income.
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/Nigeria_GHS_W1_agwage_income.dta", nogen
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/rainfall_10.dta", nogen
 merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/subsidized_fert.dta", nogen
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/shock.dta", nogen
-merge 1:1 hhid using "${Nigeria_GHS_W1_created_data}/haz.dta", nogen
+sort hhid
 
 
 
-*keep if ag_rainy_10==1
+misstable summarize haz haz2 peraeq_cons_protein peraeq_cons_cereal totalcons_protein totalcons_cereal shock value_harvest quant_harv_kg ha_planted real_tpricefert_cens_mrk  shortfall_Mar mrk_dist_w real_maize_price_mr  total_qty real_hhvalue field_size hh_members num_mem hh_headage femhead attend_sch  mean_annual_rainfall   zone state lga ea ag_shock nonag_shock land_holding 
+
+
+*br hhid ag_shock nonag_shock shock value_harvest field_size hh_members num_mem hh_headage femhead attend_sch haz child child1 house if house ==3
+
 ***********************Dealing with outliers*************************
 
 
 gen year = 2010
 sort hhid
 
-drop if hhid == 310100 //didnt report price****
-drop if hhid == 340089 //didnt report price****
+*drop if hhid == 310100 //didnt report price****
+*drop if hhid == 340089 //didnt report price****
+
+misstable summarize haz haz2 peraeq_cons_protein peraeq_cons_cereal totalcons_protein totalcons_cereal shock value_harvest quant_harv_kg ha_planted real_tpricefert_cens_mrk  shortfall_Mar mrk_dist_w real_maize_price_mr  total_qty real_hhvalue field_size hh_members num_mem hh_headage femhead attend_sch  mean_annual_rainfall   zone state lga ea ag_shock nonag_shock land_holding 
 
 
-tabstat ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty  real_tpricefert_cens_mrk real_hhvalue mean_annual_rainfall [w=weight], statistics( mean median sd min max ) columns(statistics)
-count
-misstable summarize ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty  real_tpricefert_cens_mrk real_hhvalue mean_annual_rainfall mrk_dist_w num_mem hh_headage femhead attend_sch zone state lga ea
+replace total_qty_w = 0 if total_qty_w==.
+replace shock = 0 if shock ==.
+replace ag_shock = 0 if ag_shock ==.
+replace nonag_shock = 0 if nonag_shock ==.
 
-
-
-replace total_qty = 0 if total_qty==.
 
 egen median_maize = median(real_maize_price_mr)
 replace real_maize_price_mr = median_maize if real_maize_price_mr==.
@@ -2617,8 +2666,8 @@ replace real_maize_price_mr = median_maize if real_maize_price_mr==.
 egen median_rice = median (real_rice_price_mr)
 replace real_rice_price_mr = median_rice if real_rice_price_mr==.
 
-*egen median_dist = median (mrk_dist_w)
-*replace mrk_dist_w = median_dist if mrk_dist_w==.
+egen median_dist = median (mrk_dist_w)
+replace mrk_dist_w = median_dist if mrk_dist_w==.
 
 egen median_real_tpricefert_cens_mrk = median(real_tpricefert_cens_mrk)
 replace real_tpricefert_cens_mrk = median_real_tpricefert_cens_mrk if real_tpricefert_cens_mrk==.
@@ -2626,39 +2675,40 @@ replace real_tpricefert_cens_mrk = median_real_tpricefert_cens_mrk if real_tpric
 
 
 
-egen medianfert_dist_ea = median(mrk_dist_w), by (ea)
-egen medianfert_dist_lga = median(mrk_dist_w), by (lga)
-egen medianfert_dist_state = median(mrk_dist_w), by (state)
-egen medianfert_dist_zone = median(mrk_dist_w), by (zone)
+egen medianfert_dist_ea = median(value_harvest), by (ea)
+egen medianfert_dist_lga = median(value_harvest), by (lga)
+egen medianfert_dist_state = median(value_harvest), by (state)
+egen medianfert_dist_zone = median(value_harvest), by (zone)
 
 
-replace mrk_dist_w = medianfert_dist_ea if mrk_dist_w ==. 
-replace mrk_dist_w = medianfert_dist_lga if mrk_dist_w ==. 
-replace mrk_dist_w = medianfert_dist_state if mrk_dist_w ==.
+replace value_harvest = medianfert_dist_ea if value_harvest ==. 
+replace value_harvest = medianfert_dist_lga if value_harvest ==. 
+replace value_harvest = medianfert_dist_state if value_harvest ==.
 
-replace mrk_dist_w = medianfert_dist_zone if mrk_dist_w ==. 
-
-misstable summarize ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk   real_hhvalu mrk_dist_w num_mem hh_headage femhead attend_sch  peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall  dev_rain_2010_Mar dev_rain_2010_Aug 
+replace value_harvest = medianfert_dist_zone if value_harvest ==. 
 
 egen mean1 = mean (dev_rain_2010_Mar)
 egen mean2 = mean (dev_rain_2010_Aug)
-
-
-tabstat haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk   real_hhvalue mrk_dist_w num_mem hh_headage femhead attend_sch peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall dev_rain_2010_Mar dev_rain_2010_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
-
-misstable summarize haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk   real_hhvalue mrk_dist_w num_mem hh_headage femhead attend_sch peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall dev_rain_2010_Mar dev_rain_2010_Aug
+egen mean3 = mean (shortfall_Mar)
+egen mean4 = mean (mean_annual_rainfall)
 
 ren dev_rain_2010_Mar dev_rain_Mar
 ren  dev_rain_2010_Aug dev_rain_Aug
 
-
-egen med = median(haz)
-tab med
-replace haz = med if haz ==.
-
-
-tabstat haz ha_planted field_size quant_harv_kg value_harvest maize_price_mr real_maize_price_mr total_qty real_tpricefert_cens_mrk   real_hhvalue mrk_dist_w num_mem hh_headage femhead attend_sch peraeq_cons_cereal peraeq_cons_protein peraeq_cons_veg totalcons_cereal totalcons_protein totalcons_veg mean_annual_rainfall dev_rain_Mar dev_rain_Aug  [w=weight], statistics( mean median sd min max ) columns(statistics)
+replace dev_rain_Mar = mean1 if dev_rain_Mar ==. 
+replace dev_rain_Aug = mean2 if dev_rain_Aug ==. 
+replace shortfall_Mar = mean3 if shortfall_Mar ==. 
+replace mean_annual_rainfall = mean4 if mean_annual_rainfall ==. 
 
 
+tabstat haz peraeq_cons_protein peraeq_cons_cereal totalcons_protein totalcons_cereal shock value_harvest quant_harv_kg ha_planted real_tpricefert_cens_mrk  shortfall_Mar mrk_dist_w real_maize_price_mr total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch mean_annual_rainfall  dev_rain_Mar dev_rain_Aug zone state lga ea  [w=weight], statistics( mean median sd min max ) columns(statistics)
+
+
+misstable summarize haz peraeq_cons_protein peraeq_cons_cereal totalcons_protein totalcons_cereal shock value_harvest quant_harv_kg ha_planted real_tpricefert_cens_mrk  shortfall_Mar mrk_dist_w real_maize_price_mr  total_qty real_hhvalue field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall  dev_rain_Mar dev_rain_Aug zone state lga ea
+
+misstable summarize hhid haz haz2 peraeq_cons_protein peraeq_cons_cereal totalcons_protein totalcons_cereal shock value_harvest quant_harv_kg ha_planted real_tpricefert_cens_mrk  shortfall_Mar mrk_dist_w real_maize_price_mr  total_qty real_hhvalue field_size hh_members num_mem hh_headage femhead attend_sch  mean_annual_rainfall   zone state lga ea ag_shock nonag_shock land_holding 
+
+
+/*good fair worker*/
 save "${Nigeria_GHS_W1_created_data}/final_10.dta", replace
 

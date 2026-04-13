@@ -5,27 +5,60 @@
 
 
 
-
-
 use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_one\final_10.dta", replace
-append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_12.dta" 
-append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_15.dta"
+keep if ag_rainy_10==1
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_one\final_100.dta", replace
 
-append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\final_23.dta" 
 
-append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_four\final_19.dta"
+use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_12.dta" , replace
+keep if ag_rainy_12==1
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_120.dta" , replace
+
+use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_15.dta", replace
+keep if ag_rainy_15==1
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_150.dta", replace
+
+
+use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_four\final_19.dta", replace
+keep if ag_rainy_18==1
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_four\final_190.dta", replace
+
+
+use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\final_23.dta", replace
+keep if ag_rainy_23==1
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\final_230.dta", replace
+
+
+
+
+
+
+
+
+use  "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_one\final_100.dta", replace
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_two\final_120.dta" 
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_three\final_150.dta"
+
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\final_230.dta" 
+
+append using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_four\final_190.dta"
 
 keep if child==1
 
 
 
-save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_childonly.dta", replace
 
 
 
 
 
-use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_childonly.dta", clear
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_agchild.dta", replace
+
+
+
+
+
+use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_agchild.dta", clear
 
 order year
 
@@ -37,7 +70,7 @@ tab dummy
 keep if dummy==5
 sort hhid
 
-merge 1:m hhid  using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_childonly.dta", gen(fil)
+merge 1:m hhid  using "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\wave_five\apppend_agchild.dta", gen(fil)
 
 drop if fil==2
 
@@ -79,11 +112,15 @@ replace peraeq_cons_protein = 0 if peraeq_cons_protein ==.
 
 gen lperaeq_cons_protein = log(peraeq_cons_protein + 1)
 
+
+
 summ value_harvest, detail
 
 egen med_income = median(value_harvest)
 gen high_income = value_harvest > med_income
 tab high_income
+
+
 
 
 local time_avg "mrk_dist_w  real_maize_price_mr good fair  total_qty real_hhvalue field_size num_mem hh_headage femhead attend_sch  real_tpricefert_cens_mrk value_harvest annual_salary_agwage annual_salary mean_annual_rainfall shock ag_shock nonag_shock hh_members high_income"
@@ -95,6 +132,12 @@ foreach x in `time_avg' {
 }
 
 
+
+/*
+gen high_income = .
+replace high_income = 1 if value_harvest > r(p50)
+replace high_income = 0 if value_harvest < r(p50)
+*/
 
 
 preserve
@@ -162,6 +205,9 @@ Fancy bar-line graph by year:
 - Uses weights if available
 ********************************************************************/
 
+
+
+
 /********************************************************************
 Long Run 
 ********************************************************************/
@@ -205,6 +251,7 @@ restore
 /********************************************************************
 Short Run
 ********************************************************************/
+
 
 preserve
 
@@ -256,13 +303,6 @@ restore
 *****************************************************************************************************************************************
 *****************************************************************************************************************************************
 *****************************************************************************************************************************************
-
-
-
-
-
-
-
 
 
 
@@ -508,7 +548,7 @@ ttest  mrk_dist_w, by(year) unequal
 *****************************************************************************************************************************************
 
 
-save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_only.dta", replace ///everything
+save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\agchild.dta", replace ///everything
 
 
 
@@ -521,18 +561,18 @@ save "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_p
 *******************************************************
 *ivreg2
 *******************************************************
-use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_only.dta", clear //everything
+use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\agchild.dta", clear //everything
 
 
 
 //worker total_qty_w
 replace haz = 0 if haz==.
 
-gen inc_shock  = value_harvest*ag_shock
+gen inc_shock  = high_income*ag_shock
 gen rain_shock = shortfall_Mar*ag_shock
 
 ivregress 2sls peraeq_cons_protein ///
-    (value_harvest inc_shock = shortfall_Mar rain_shock) ///
+    (high_income inc_shock = shortfall_Mar rain_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
     i.year, vce(cluster hhid)
@@ -545,7 +585,7 @@ lincom value_harvest + inc_shock
 
 
 ivreghdfe peraeq_cons_protein ///
-    (value_harvest inc_shock = shortfall_Mar rain_shock) ///
+    (high_income inc_shock = shortfall_Mar rain_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr   real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
     , absorb(hhid year) cluster(hhid)
@@ -564,7 +604,7 @@ lincom value_harvest + inc_shock
 
 
 ivregress 2sls haz ///
-    (c.value_harvest c.value_harvest#c.ag_shock = ///
+    (c.high_income c.high_income#c.ag_shock = ///
      c.dev_rain_Mar  c.dev_rain_Aug ///
      c.dev_rain_Mar#c.ag_shock c.dev_rain_Aug#c.ag_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr   real_hhvalue ///
@@ -582,12 +622,12 @@ lincom value_harvest + c.value_harvest#c.ag_shock
 
 
 ivreghdfe haz ///
-    (c.value_harvest c.value_harvest#c.shock = ///
+    (c.high_income c.high_income#c.shock = ///
      c.dev_rain_Mar  c.dev_rain_Aug ///
      c.dev_rain_Mar#c.ag_shock c.dev_rain_Aug#c.ag_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall, ///
-    absorb(ea year) cluster(hhid)
+    absorb(hhid year) cluster(hhid)
 
 lincom value_harvest
 lincom value_harvest + c.value_harvest#c.shock
@@ -605,10 +645,10 @@ lincom value_harvest + c.value_harvest#c.shock
 *************************
 *2
 *************************
-use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_only.dta", clear //everything
+use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\agchild.dta", clear //everything
 
 * Endogenous interaction
-gen inc_shock = value_harvest*ag_shock
+gen inc_shock = high_income*ag_shock
 
   
 * Excluded instruments interacted with shock
@@ -620,33 +660,33 @@ gen zAug_shock = dev_rain_Aug*ag_shock
 
 eststo clear
 ivregress 2sls lperaeq_cons_protein ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr   real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
 estat firststage
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 eststo clear
 ivreghdfe lperaeq_cons_protein ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_real_maize_price_mr TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_real_maize_price_mr TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
-    , absorb(hhid year) cluster(hhid)
+    , absorb( ea year) cluster(hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 
@@ -658,12 +698,12 @@ lincom value_harvest + inc_shock
 
 eststo clear
 ivregress 2sls haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     ag_shock  i.year, vce(cluster hhid)
 
 ivreghdfe haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
-    ag_shock  , absorb(hhid year) cluster(hhid)
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    ag_shock  , absorb(ea year) cluster(hhid)
 
 
 
@@ -671,41 +711,31 @@ ivreghdfe haz ///
 
 eststo clear
 ivregress 2sls haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\haz.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
 estat firststage
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 
 ivreghdfe haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     ag_shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
-    , absorb(ea year) cluster(hhid)
+    , absorb(ea year) cluster(ea)
 
-lincom value_harvest
-lincom value_harvest + inc_shock
-
-
-
-
-
-
-
-
-
-
+lincom high_income
+lincom high_income + inc_shock
 
 
 
@@ -724,10 +754,10 @@ lincom value_harvest + inc_shock
 *************************
 *2
 *************************
-use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_only.dta", clear //everything
+use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\agchild.dta", clear //everything
 
 * Endogenous interaction
-gen inc_shock = value_harvest*shock
+gen inc_shock = high_income*shock
 
   
 * Excluded instruments interacted with shock
@@ -739,33 +769,33 @@ gen zAug_shock = dev_rain_Aug*shock
 
 eststo clear
 ivregress 2sls lperaeq_cons_protein ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr   real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w  TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
 estat firststage
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 eststo clear
 ivreghdfe lperaeq_cons_protein ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_shock TAvg_real_maize_price_mr TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_shock TAvg_real_maize_price_mr TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
     , absorb(hhid year) cluster(hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\protein.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 
@@ -777,11 +807,11 @@ lincom value_harvest + inc_shock
 
 eststo clear
 ivregress 2sls haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock  i.year, vce(cluster hhid)
 
 ivreghdfe haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock  , absorb(hhid year) cluster(hhid)
 
 
@@ -790,31 +820,31 @@ ivreghdfe haz ///
 
 eststo clear
 ivregress 2sls haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
     i.year, vce(cluster hhid)
 eststo model1
 esttab m* using "C:\Users\obine\Music\Documents\Project_26\result\haz.regression.rtf", label replace cells(b(star fmt(%9.2f)) se(par fmt(%9.2f)))
 
 estat firststage
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 
 ivreghdfe haz ///
-    (value_harvest inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
+    (high_income inc_shock = dev_rain_Mar dev_rain_Aug zMar_shock zAug_shock) ///
     shock mrk_dist_w real_maize_price_mr  real_hhvalue ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
-	TAvg_mrk_dist_w TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
+	TAvg_mrk_dist_w TAvg_high_income TAvg_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
-    , absorb(ea year) cluster(hhid)
+    , absorb(ea year) cluster(ea)
 
-lincom value_harvest
-lincom value_harvest + inc_shock
+lincom high_income
+lincom high_income + inc_shock
 
 
 
@@ -849,7 +879,7 @@ lincom value_harvest + inc_shock
 *************************
 *2
 *************************
-use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\child_only.dta", clear //everything
+use "C:\Users\obine\Music\Documents\Project_26\dofile\original\pp_only\akuffo_plot\agchild.dta", clear //everything
 
 * Endogenous interaction
 gen inc_shock = value_harvest*nonag_shock
@@ -936,9 +966,8 @@ ivreghdfe haz ///
     field_size hh_members hh_headage femhead attend_sch  mean_annual_rainfall ///
 	TAvg_mrk_dist_w TAvg_nonag_shock TAvg_real_maize_price_mr  TAvg_real_hhvalue ///
     TAvg_field_size TAvg_hh_members TAvg_hh_headage TAvg_femhead TAvg_attend_sch  TAvg_mean_annual_rainfall ///
-    , absorb(ea year) cluster(hhid)
+    , absorb(ea year) cluster(ea)
 
 lincom value_harvest
 lincom value_harvest + inc_shock
-
 

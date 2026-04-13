@@ -3655,14 +3655,14 @@ save "${Nigeria_GHS_W5_created_data}/Nigeria_GHS_W5_shannon_diversity_index.dta"
 
 
 
-global climate "C:\Users\obine\Music\Documents\food_secure\dofile\original\pp_only\CHIRPS"
+global climate "C:\Users\obine\Music\Documents\food_secure\dofile\original\pp_only\CHIRPS\spatial"
 *--------------------------------------------------------------*
 * 1. Load household rainfall dataset
 *--------------------------------------------------------------*
 use "$climate\Nigeria_y4_hh_coordinates_rainfall_TS_monthly.dta", clear
 
 * Rename rainfall variables to avoid name conflicts after merge
-foreach var of varlist rain_2007_01 - rain_2023_12 {
+foreach var of varlist rain_1987_01 - rain_2023_12 {
     rename `var' hh_`var'
 }
 
@@ -3681,7 +3681,7 @@ drop _merge
 *--------------------------------------------------------------*
 * 3. Transfer household rainfall into plot rainfall variables
 *--------------------------------------------------------------*
-foreach var of varlist hh_rain_2007_01 - hh_rain_2023_12 {
+foreach var of varlist hh_rain_1987_01 - hh_rain_2023_12 {
     local new = subinstr("`var'", "hh_", "", .)   // remove hh_ prefix
     gen `new' = `var'
 }
@@ -3689,7 +3689,7 @@ foreach var of varlist hh_rain_2007_01 - hh_rain_2023_12 {
 *--------------------------------------------------------------*
 * 4. Remove household-prefixed rainfall variables
 *--------------------------------------------------------------*
-drop hh_rain_2007_01 - hh_rain_2023_12
+drop hh_rain_1987_01 - hh_rain_2023_12
 
 		
 
@@ -3752,7 +3752,7 @@ egen mean_annual_rainfall = rowmean(rain_*_01 rain_*_02 rain_*_03 rain_*_04 rain
 *----------------------------------------------------------------------
 * 6. Annual shortfall (corrected code using loops)
 *----------------------------------------------------------------------
-forvalues yr = 2007/2022 {
+forvalues yr = 1987/2022 {
     forvalues mm = 1/12 {
         local m : display %02.0f `mm'
         local var rain_`yr'_`m'
@@ -3773,7 +3773,7 @@ gen shortfall_Aug = mean_rain_Aug_Dec  - mean_annual_rainfall
 *----------------------------------------------------------------------
 * 7. Loop for seasonal means by year (2007–2023)
 *----------------------------------------------------------------------
-forvalues yr = 2007/2022 {
+forvalues yr = 1987/2022 {
     egen m_rain_`yr'_Mar_June = rowmean(rain_`yr'_03 rain_`yr'_04 rain_`yr'_05 rain_`yr'_06)
     egen m_rain_`yr'_Mar_July = rowmean(rain_`yr'_03 rain_`yr'_04 rain_`yr'_05 rain_`yr'_06 rain_`yr'_07)
     egen m_rain_`yr'_Aug_Dec  = rowmean(rain_`yr'_08 rain_`yr'_09 rain_`yr'_10 rain_`yr'_11 rain_`yr'_12)
